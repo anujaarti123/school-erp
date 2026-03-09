@@ -1,0 +1,143 @@
+// School ERP - Premium MVP
+// Database: PostgreSQL (Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  PARENT
+  TEACHER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  phone     String?  @unique
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Parent?
+  teacher  Teacher?
+  admin    Admin?
+}
+
+model Parent {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+
+  studentLinks StudentParent[]
+}
+
+model Teacher {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+
+  assignments TeacherClassAssignment[]
+}
+
+model Admin {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+}
+
+model Class {
+  id   String @id @default(cuid())
+  name String // e.g. "5", "6"
+  section String // e.g. "A", "B"
+
+  students         Student[]
+  assignments      TeacherClassAssignment[]
+  homework         Homework[]
+  feeStructure     FeeStructure?
+}
+
+model TeacherClassAssignment {
+  id       String @id @default(cuid())
+  teacherId String
+  teacher  Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  classId  String
+  class    Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, classId])
+}
+
+model Student {
+  id       String @id @default(cuid())
+  rollNo   String
+  name     String
+  classId  String
+  class    Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  parentLinks StudentParent[]
+  attendance   Attendance[]
+  results      Result[]
+}
+
+model StudentParent {
+  id        String @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parentId  String
+  parent    Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, parentId])
+}
+
+model Homework {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  attachmentUrl String?
+  classId    String
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model FeeStructure {
+  id      String @id @default(cuid())
+  classId String @unique
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  amount  Decimal
+  term    String // e.g. "Q1", "Annual"
+}
+
+model BusRoute {
+  id        String @id @default(cuid())
+  name      String
+  stops     Json   // Array of {name, time}
+  driver    String?
+  vehicle   String?
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    String   // P, A, L
+}
+
+model Result {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject   String
+  exam      String
+  marks     Decimal
+}

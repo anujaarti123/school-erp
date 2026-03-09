@@ -1,0 +1,35 @@
+# Dependencies
+**/node_modules/
+
+# Environment (never commit secrets)
+**/.env
+**/.env.local
+**/.env.*.local
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+.next/
+build/
+dist/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter
+mobile_app/.dart_tool/
+mobile_app/build/
+mobile_app/.packages
+
+# Admin web
+admin-web/.next/
+admin-web/out/

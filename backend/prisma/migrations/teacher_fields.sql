@@ -1,0 +1,8 @@
+-- Run in Supabase SQL Editor
+ALTER TABLE "Teacher" ADD COLUMN IF NOT EXISTS "fatherHusbandName" TEXT;
+ALTER TABLE "Teacher" ADD COLUMN IF NOT EXISTS "specialization" TEXT;
+ALTER TABLE "Teacher" ADD COLUMN IF NOT EXISTS "category" TEXT;
+ALTER TABLE "Teacher" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE "Teacher" ADD COLUMN IF NOT EXISTS "bloodGroup" TEXT;
+ALTER TABLE "Teacher" ADD COLUMN IF NOT EXISTS "experience" TEXT;
+ALTER TABLE "Teacher" ADD COLUMN IF NOT EXISTS "address" TEXT;
