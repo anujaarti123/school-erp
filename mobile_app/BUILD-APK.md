@@ -66,3 +66,17 @@ flutter build apk --dart-define=API_URL=http://YOUR_PC_IP:4000
 ```
 
 Ensure the backend is running and reachable from the device (same Wi‑Fi network).
+
+## Banners not showing in Parent app?
+
+The Parent app fetches banners from the **deployed backend** (Render). If you save banners in Admin but they don't show:
+
+1. **Deploy the backend to Render** – Push your code to GitHub and let Render auto-deploy, or trigger a manual deploy. The banners route must be on the live server.
+
+2. **Admin must use the same backend** – In `admin-web/.env.local`, set:
+   ```
+   NEXT_PUBLIC_API_URL=https://school-erp-06ur.onrender.com
+   ```
+   So Admin and Parent both use the same API and database.
+
+3. **Pull to refresh** – After saving banners, pull down on the Parent dashboard to reload.

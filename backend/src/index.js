@@ -14,6 +14,7 @@ const notificationsRoutes = require('./routes/notifications');
 const feesRoutes = require('./routes/fees');
 const busRoutes = require('./routes/bus');
 const parentRoutes = require('./routes/parent');
+const bannersRoutes = require('./routes/banners');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -65,6 +66,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/fees', feesRoutes);
 app.use('/api/bus', busRoutes);
 app.use('/api/parent', parentRoutes);
+app.use('/api/banners', bannersRoutes);
 
 app.listen(PORT, () => {
   console.log(`School ERP API running on http://localhost:${PORT}`);

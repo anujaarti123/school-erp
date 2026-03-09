@@ -67,6 +67,12 @@ export default function DashboardLayout({
             Bus
           </Link>
           <Link
+            href="/dashboard/banners"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#1E293B]"
+          >
+            Banners
+          </Link>
+          <Link
             href="/dashboard/import"
             className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#1E293B]"
           >

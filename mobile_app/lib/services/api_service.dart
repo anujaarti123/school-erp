@@ -18,7 +18,7 @@ class ApiService {
 
   Future<List<dynamic>> getHomework() async {
     final uri = Uri.parse('${await _baseUrl()}/api/homework');
-    final res = await http.get(uri, headers: await _headers());
+    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 15));
     if (res.statusCode == 401) throw Exception('Session expired');
     if (res.statusCode != 200) throw Exception('Failed to load homework');
     final body = jsonDecode(res.body) as Map<String, dynamic>?;
@@ -79,7 +79,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> getBusMyChildren() async {
     final uri = Uri.parse('${await _baseUrl()}/api/bus/my-children');
-    final res = await http.get(uri, headers: await _headers());
+    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 15));
     if (res.statusCode == 401) throw Exception('Session expired');
     if (res.statusCode != 200) throw Exception('Failed to load bus info');
     return jsonDecode(res.body) as Map<String, dynamic>;
@@ -136,9 +136,25 @@ class ApiService {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  Future<List<dynamic>> getBanners() async {
+    final uri = Uri.parse('${await _baseUrl()}/api/banners');
+    try {
+      final res = await http.get(uri).timeout(const Duration(seconds: 45));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body) as Map<String, dynamic>?;
+      final list = (body?['banners'] as List?) ?? [];
+      return list.where((b) {
+        final url = b is Map ? b['imageUrl']?.toString().trim() : null;
+        return url != null && url.isNotEmpty;
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<Map<String, dynamic>> getFeesMyChildren() async {
     final uri = Uri.parse('${await _baseUrl()}/api/fees/my-children');
-    final res = await http.get(uri, headers: await _headers());
+    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 60));
     if (res.statusCode == 401) throw Exception('Session expired');
     if (res.statusCode != 200) throw Exception('Failed to load fees');
     return jsonDecode(res.body) as Map<String, dynamic>;

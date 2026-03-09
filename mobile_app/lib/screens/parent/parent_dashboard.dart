@@ -17,11 +17,24 @@ class _ParentDashboardState extends State<ParentDashboard> {
   int _selectedIndex = 0;
   bool _loading = true;
   String? _error;
+  double _totalFeePending = 0;
+  int _homeworkCount = 0;
+  int _overdueHomeworkCount = 0;
+  int _childrenWithBus = 0;
+  List<dynamic> _banners = [];
+  final _bannerController = PageController();
+  int _bannerPage = 0;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _bannerController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -35,7 +48,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
       setState(() {
         _children = data;
         _selectedIndex = _children.isNotEmpty ? 0 : -1;
-        _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
@@ -43,6 +55,76 @@ class _ParentDashboardState extends State<ParentDashboard> {
         _error = e.toString().replaceFirst('Exception: ', '');
         _loading = false;
       });
+      return;
+    }
+    await _loadKpis();
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _loadKpis() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    try {
+      final fees = await _api.getFeesMyChildren();
+      if (!mounted) return;
+      double total = 0;
+      final topDue = fees['totalDue'];
+      if (topDue != null) {
+        if (topDue is num) total = topDue.toDouble();
+        else if (topDue is String) total = double.tryParse(topDue) ?? 0;
+      }
+      if (total == 0) {
+        final children = fees['children'] as List<dynamic>? ?? [];
+        for (final c in children) {
+          final d = c['totalDue'];
+          if (d is num) total += d.toDouble();
+          else if (d is String) total += double.tryParse(d) ?? 0;
+        }
+      }
+      setState(() => _totalFeePending = total);
+    } catch (_) {
+      if (mounted) setState(() => _totalFeePending = 0);
+    }
+    try {
+      final hwList = await _api.getHomework();
+      if (!mounted) return;
+      int overdue = 0;
+      for (final h in hwList) {
+        final due = h['dueDate'] as String?;
+        if (due != null) {
+          try {
+            final d = DateTime.parse(due);
+            if (DateTime(d.year, d.month, d.day).isBefore(today)) overdue++;
+          } catch (_) {}
+        }
+      }
+      setState(() {
+        _homeworkCount = hwList.length;
+        _overdueHomeworkCount = overdue;
+      });
+    } catch (_) {
+      if (mounted) setState(() {
+        _homeworkCount = 0;
+        _overdueHomeworkCount = 0;
+      });
+    }
+    try {
+      final busData = await _api.getBusMyChildren();
+      if (!mounted) return;
+      final list = busData['children'] as List<dynamic>? ?? [];
+      int withBus = 0;
+      for (final c in list) {
+        if (c['busInfo'] != null) withBus++;
+      }
+      setState(() => _childrenWithBus = withBus);
+    } catch (_) {
+      if (mounted) setState(() => _childrenWithBus = 0);
+    }
+    try {
+      final list = await _api.getBanners();
+      if (mounted) setState(() => _banners = list);
+    } catch (_) {
+      if (mounted) setState(() => _banners = []);
     }
   }
 
@@ -86,7 +168,13 @@ class _ParentDashboardState extends State<ParentDashboard> {
                               children: [
                                 _buildAppBar(),
                                 const SizedBox(height: 24),
+                                if (_banners.isNotEmpty) ...[
+                                  _buildBannerCarousel(),
+                                  const SizedBox(height: 24),
+                                ],
                                 _buildChildSelector(),
+                                const SizedBox(height: 24),
+                                _buildKpiSection(),
                                 const SizedBox(height: 24),
                                 if (_selectedChild != null) ...[
                                   _buildClassTeacherCard(),
@@ -150,6 +238,102 @@ class _ParentDashboardState extends State<ParentDashboard> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBannerCarousel() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 160,
+          child: PageView.builder(
+            controller: _bannerController,
+            onPageChanged: (i) => setState(() => _bannerPage = i),
+            itemCount: _banners.length,
+            itemBuilder: (context, i) {
+          final b = _banners[i] as Map<String, dynamic>;
+          final imageUrl = b['imageUrl'] as String? ?? '';
+          final title = b['title'] as String? ?? '';
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.white.withOpacity(0.3),
+                      child: Icon(Icons.image_not_supported_rounded, size: 48, color: Colors.white70),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+                      ),
+                    ),
+                  ),
+                  if (title.isNotEmpty)
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 16,
+                      child: Text(
+                        title,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 4, offset: const Offset(0, 2)),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+            },
+          ),
+        ),
+        if (_banners.length > 1) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_banners.length, (i) {
+              final isActive = i == _bannerPage;
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 20 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              );
+            }),
+          ),
+        ],
+      ],
     );
   }
 
@@ -256,6 +440,134 @@ class _ParentDashboardState extends State<ParentDashboard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildKpiSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Overview',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withOpacity(0.95),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildKpiCard(
+                  'Fees Pending',
+                  _totalFeePending > 0 ? '₹${_totalFeePending.toStringAsFixed(0)}' : '₹0',
+                  Icons.payment_rounded,
+                  const Color(0xFFDC2626),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildKpiCard(
+                  'Homework',
+                  '$_homeworkCount',
+                  Icons.assignment_rounded,
+                  const Color(0xFF7C3AED),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildKpiCard(
+                  'Overdue',
+                  '$_overdueHomeworkCount',
+                  Icons.warning_amber_rounded,
+                  const Color(0xFFD97706),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildKpiCard(
+                  'Bus Assigned',
+                  _children.isEmpty ? '—' : '$_childrenWithBus/${_children.length}',
+                  Icons.directions_bus_rounded,
+                  const Color(0xFF0284C7),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKpiCard(String label, String value, IconData icon, Color color) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (label == 'Fees Pending' && _totalFeePending > 0) {
+            Navigator.pushNamed(context, '/parent/fees', arguments: _selectedChild);
+          } else if (label == 'Homework' || label == 'Overdue') {
+            Navigator.pushNamed(context, '/parent/homework', arguments: _selectedChild);
+          } else if (label == 'Bus Assigned') {
+            Navigator.pushNamed(context, '/parent/bus', arguments: _selectedChild);
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: color, size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: GoogleFonts.sourceSans3(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

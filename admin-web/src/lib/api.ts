@@ -87,6 +87,20 @@ export async function uploadStudentImage(file: File): Promise<string> {
   return data.url;
 }
 
+export async function uploadBannerImage(file: File): Promise<string> {
+  const token = getToken();
+  const form = new FormData();
+  form.append("image", file);
+  const res = await fetch(`${API_URL}/api/upload/banner-image`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Upload failed");
+  return data.url;
+}
+
 export const api = {
   students: {
     parentLookup: (phone: string) =>
@@ -332,5 +346,10 @@ export const api = {
     assignStudentBus: (studentId: string, body: { busRouteId?: string; pickupStopId?: string; dropStopId?: string }) =>
       fetchApi(`/api/bus/students/${studentId}/bus`, { method: "PUT", body: JSON.stringify(body) }),
     myChildren: () => fetchApi<{ children: unknown[] }>("/api/bus/my-children"),
+  },
+  banners: {
+    list: () => fetchApi<{ banners: { id: string; imageUrl: string; title: string; sortOrder: number }[] }>("/api/banners"),
+    save: (banners: { id?: string; imageUrl: string; title: string; sortOrder?: number }[]) =>
+      fetchApi<{ banners: unknown[] }>("/api/banners", { method: "PUT", body: JSON.stringify({ banners }) }),
   },
 };

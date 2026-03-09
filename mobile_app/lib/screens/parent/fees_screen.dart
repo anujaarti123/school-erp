@@ -49,8 +49,12 @@ class _FeesScreenState extends State<FeesScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final msg = e.toString();
+      final friendly = msg.contains('TimeoutException') || msg.contains('Timeout')
+          ? 'Connection timed out. Please check your internet and retry.'
+          : msg.replaceFirst('Exception: ', '');
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = friendly;
         _loading = false;
       });
     }

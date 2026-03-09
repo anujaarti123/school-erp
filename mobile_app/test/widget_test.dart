@@ -10,10 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:school_erp/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('App loads with branding', (WidgetTester tester) async {
     await tester.pumpWidget(const SchoolErpApp());
-    await tester.pumpAndSettle();
-    expect(find.text('School ERP'), findsOneWidget);
+    await tester.pumpAndSettle(const Duration(seconds: 3));
+    expect(find.text('SUTARA MEHI MISSION SCHOOL'), findsAtLeastNWidgets(1));
   });
 }
