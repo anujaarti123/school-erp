@@ -117,6 +117,25 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getTeacherTimetable() async {
+    final uri = Uri.parse('${await _baseUrl()}/api/planner/my-timetable');
+    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 15));
+    if (res.statusCode == 401) throw Exception('Session expired');
+    if (res.statusCode == 403) return [];
+    if (res.statusCode != 200) return [];
+    final body = jsonDecode(res.body) as Map<String, dynamic>?;
+    return (body?['data'] as List?) ?? [];
+  }
+
+  Future<Map<String, dynamic>> getTeacherProfile() async {
+    final uri = Uri.parse('${await _baseUrl()}/api/teachers/me');
+    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 15));
+    if (res.statusCode == 401) throw Exception('Session expired');
+    if (res.statusCode == 403) throw Exception('Access denied');
+    if (res.statusCode != 200) throw Exception('Failed to load profile');
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> getFeesMyChildren() async {
     final uri = Uri.parse('${await _baseUrl()}/api/fees/my-children');
     final res = await http.get(uri, headers: await _headers());

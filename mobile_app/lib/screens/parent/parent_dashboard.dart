@@ -170,7 +170,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 110,
+          height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -207,7 +207,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       CircleAvatar(
-                        radius: 32,
+                        radius: 28,
                         backgroundColor: isSelected
                             ? AppColors.primary.withOpacity(0.15)
                             : Colors.white.withOpacity(0.5),
@@ -218,7 +218,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
                             ? Text(
                                 name.isNotEmpty ? name[0].toUpperCase() : '?',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 24,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                   color: isSelected ? AppColors.primary : Colors.white,
                                 ),

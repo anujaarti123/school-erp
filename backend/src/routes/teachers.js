@@ -46,6 +46,21 @@ router.get('/', requireRole('ADMIN'), async (req, res) => {
   }
 });
 
+// GET /api/teachers/me - logged-in teacher's profile (for mobile app)
+router.get('/me', async (req, res) => {
+  if (req.user.role !== 'TEACHER') return res.status(403).json({ error: 'Forbidden' });
+  const teacherId = req.user.teacherId;
+  const fallbackName = (req.user.email || '').split('@')[0] || 'Teacher';
+  if (!teacherId || !supabase) return res.json({ name: fallbackName, imageUrl: null });
+  try {
+    const { data: teacher, error } = await supabase.from('Teacher').select('id, name, imageUrl').eq('id', teacherId).single();
+    if (error || !teacher) return res.json({ name: fallbackName, imageUrl: null });
+    res.json({ name: teacher.name || fallbackName, imageUrl: teacher.imageUrl || null });
+  } catch (e) {
+    res.json({ name: fallbackName, imageUrl: null });
+  }
+});
+
 // GET /api/teachers/assignments/list - must be before /:id
 router.get('/assignments/list', async (req, res) => {
   if (!supabase) return res.json({ data: [] });
