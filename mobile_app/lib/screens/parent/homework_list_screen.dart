@@ -12,14 +12,21 @@ class HomeworkListScreen extends StatefulWidget {
 
 class _HomeworkListScreenState extends State<HomeworkListScreen> {
   final _api = ApiService();
+  Map<String, dynamic>? _selectedChild;
+  String? _loadedForClassId;
   List<dynamic> _items = [];
   bool _loading = true;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _selectedChild = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final classId = _selectedChild?['class']?['id'] as String?;
+    if (classId != _loadedForClassId) {
+      _loadedForClassId = classId;
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -30,8 +37,12 @@ class _HomeworkListScreenState extends State<HomeworkListScreen> {
     try {
       final data = await _api.getHomework();
       if (!mounted) return;
+      final classId = _selectedChild?['class']?['id'] as String?;
+      final filtered = classId != null
+          ? data.where((h) => (h as Map<String, dynamic>)['classId'] == classId).toList()
+          : data;
       setState(() {
-        _items = data;
+        _items = filtered;
         _loading = false;
       });
     } catch (e) {
@@ -48,6 +59,8 @@ class _HomeworkListScreenState extends State<HomeworkListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: Text('Homework', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

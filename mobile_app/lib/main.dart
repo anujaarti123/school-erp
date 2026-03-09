@@ -5,6 +5,7 @@ import 'screens/login/login_screen.dart';
 import 'screens/parent/parent_dashboard.dart';
 import 'screens/parent/homework_list_screen.dart';
 import 'screens/parent/bus_screen.dart';
+import 'screens/parent/fees_screen.dart';
 import 'screens/teacher/teacher_dashboard.dart';
 import 'screens/teacher/post_homework_screen.dart';
 import 'screens/teacher/class_list_screen.dart';
@@ -37,6 +38,7 @@ class SchoolErpApp extends StatelessWidget {
         '/parent': (context) => const ParentDashboard(),
         '/parent/homework': (context) => const HomeworkListScreen(),
         '/parent/bus': (context) => const BusScreen(),
+        '/parent/fees': (context) => const FeesScreen(),
         '/teacher': (context) => const TeacherDashboard(),
         '/teacher/post-homework': (context) => const PostHomeworkScreen(),
         '/teacher/class-list': (context) => const ClassListScreen(),

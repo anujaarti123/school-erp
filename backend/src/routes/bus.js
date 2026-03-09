@@ -284,7 +284,7 @@ router.get('/my-children', async (req, res) => {
     for (const sid of studentIds) {
       const { data: student } = await supabase
         .from('Student')
-        .select('id, name, rollNo, busRouteId, pickupStopId, dropStopId, class:Class(id, name, section)')
+        .select('id, name, rollNo, imageUrl, busRouteId, pickupStopId, dropStopId, class:Class(id, name, section)')
         .eq('id', sid)
         .single();
       if (!student) continue;

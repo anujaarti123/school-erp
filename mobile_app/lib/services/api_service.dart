@@ -84,4 +84,44 @@ class ApiService {
     if (res.statusCode != 200) throw Exception('Failed to load bus info');
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
+
+  Future<List<dynamic>> getParentChildren() async {
+    // Try new parent API first
+    try {
+      final uri = Uri.parse('${await _baseUrl()}/api/parent/children');
+      final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 15));
+      if (res.statusCode == 401) throw Exception('Session expired');
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body) as Map<String, dynamic>?;
+        return (body?['children'] as List?) ?? [];
+      }
+    } catch (_) {}
+    // Fallback: use bus my-children (works with older backend)
+    try {
+      final data = await getBusMyChildren();
+      final list = data['children'] as List<dynamic>? ?? [];
+      return list.map((c) {
+        final s = c['student'] as Map<String, dynamic>? ?? {};
+        final cls = s['class'] as Map<String, dynamic>?;
+        return {
+          'id': s['id'],
+          'name': s['name'],
+          'rollNo': s['rollNo'],
+          'imageUrl': s['imageUrl'],
+          'class': cls != null ? {'id': cls['id'], 'name': cls['name'], 'section': cls['section']} : null,
+          'classTeacher': null,
+        };
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load children. Check connection.');
+    }
+  }
+
+  Future<Map<String, dynamic>> getFeesMyChildren() async {
+    final uri = Uri.parse('${await _baseUrl()}/api/fees/my-children');
+    final res = await http.get(uri, headers: await _headers());
+    if (res.statusCode == 401) throw Exception('Session expired');
+    if (res.statusCode != 200) throw Exception('Failed to load fees');
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
 }

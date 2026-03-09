@@ -75,8 +75,19 @@ export default function FeesPage() {
       setClasses((c as { data: Class[] }).data);
       setStructure((s as { data: FeeStructure[] }).data);
       setSummary(sum as { totalDue: number; totalCollected: number });
-      setConfig(cfg as { feeUpiId: string; feeQrUrl: string; adminWhatsApp: string; feeStartYear?: number });
-      setConfigForm(cfg as { feeUpiId: string; feeQrUrl: string; adminWhatsApp: string; feeStartYear?: number });
+      const cfgData = cfg as { feeUpiId: string; feeQrUrl: string; adminWhatsApp: string; feeStartYear?: number };
+      setConfig({
+        feeUpiId: cfgData.feeUpiId ?? "",
+        feeQrUrl: cfgData.feeQrUrl ?? "",
+        adminWhatsApp: cfgData.adminWhatsApp ?? "",
+        feeStartYear: cfgData.feeStartYear ?? new Date().getFullYear() - 1,
+      });
+      setConfigForm({
+        feeUpiId: cfgData.feeUpiId ?? "",
+        feeQrUrl: cfgData.feeQrUrl ?? "",
+        adminWhatsApp: cfgData.adminWhatsApp ?? "",
+        feeStartYear: cfgData.feeStartYear ?? new Date().getFullYear() - 1,
+      });
       const sessList = (sess as { sessions: string[] }).sessions || [];
       setSessions(sessList);
       if (sessList.length && !filterSession) setFilterSession(sessList[sessList.length - 1]);
@@ -739,7 +750,7 @@ export default function FeesPage() {
                 <input
                   type="number"
                   value={configForm.feeStartYear ?? ""}
-                  onChange={(e) => setConfigForm({ ...configForm, feeStartYear: parseInt(e.target.value, 10) || undefined })}
+                  onChange={(e) => setConfigForm({ ...configForm, feeStartYear: parseInt(e.target.value, 10) || new Date().getFullYear() - 1 })}
                   placeholder="e.g. 2023"
                   className="w-full px-4 py-2 rounded-lg border border-[#E2E8F0]"
                 />

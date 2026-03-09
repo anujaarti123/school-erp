@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/config.dart';
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,25 +20,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _apiUrlController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadApiUrl();
-  }
-
-  Future<void> _loadApiUrl() async {
-    final url = await ApiConfig.getBaseUrl();
-    if (mounted) _apiUrlController.text = url;
-  }
 
   @override
   void dispose() {
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _apiUrlController.dispose();
     super.dispose();
   }
 
@@ -49,10 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _loading = true;
     });
     try {
-      final apiUrl = _apiUrlController.text.trim();
-      if (apiUrl.isNotEmpty) {
-        await ApiConfig.setBaseUrl(apiUrl);
-      }
       if (_isParent) {
         final phone = _phoneController.text.trim();
         if (phone.isEmpty) throw Exception('Enter phone number');
@@ -126,23 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text(
-                  'Server URL (for physical device, use PC IP)',
-                  style: GoogleFonts.sourceSans3(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _apiUrlController,
-                  keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    hintText: 'https://school-erp-api.onrender.com',
-                    prefixIcon: Icon(Icons.link, color: AppColors.primary, size: 20),
-                  ),
-                ),
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   Container(

@@ -12,14 +12,21 @@ class BusScreen extends StatefulWidget {
 
 class _BusScreenState extends State<BusScreen> {
   final _api = ApiService();
+  Map<String, dynamic>? _selectedChild;
+  String? _loadedForChildId;
   List<dynamic> _children = [];
   bool _loading = true;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _selectedChild = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final childId = _selectedChild?['id'] as String?;
+    if (childId != _loadedForChildId) {
+      _loadedForChildId = childId;
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -30,8 +37,13 @@ class _BusScreenState extends State<BusScreen> {
     try {
       final data = await _api.getBusMyChildren();
       if (!mounted) return;
+      var list = data['children'] as List<dynamic>? ?? [];
+      final sid = _selectedChild?['id'] as String?;
+      if (sid != null) {
+        list = list.where((c) => (c['student'] as Map?)?['id'] == sid).toList();
+      }
       setState(() {
-        _children = data['children'] as List<dynamic>? ?? [];
+        _children = list;
         _loading = false;
       });
     } catch (e) {
@@ -48,6 +60,8 @@ class _BusScreenState extends State<BusScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: Text('Bus', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
