@@ -198,8 +198,8 @@ export default function FeesPage() {
     setError("");
     setSaving(true);
     try {
-      await api.fees.updateConfig(configForm);
-      setConfig(configForm);
+      await api.fees.updateConfig({ ...configForm, feeQrUrl: "" });
+      setConfig({ ...configForm, feeQrUrl: "" });
       setShowConfig(false);
       load();
     } catch (e) {
@@ -505,8 +505,18 @@ export default function FeesPage() {
           <dl className="space-y-2">
             <dt className="text-sm font-medium text-[#64748B]">UPI ID</dt>
             <dd className="font-mono">{config.feeUpiId || "—"}</dd>
-            <dt className="text-sm font-medium text-[#64748B] mt-4">QR Image URL</dt>
-            <dd>{config.feeQrUrl ? <img src={config.feeQrUrl} alt="QR" className="w-32 h-32 mt-1" /> : "—"}</dd>
+            <dt className="text-sm font-medium text-[#64748B] mt-4">QR Code (auto-generated from UPI ID)</dt>
+            <dd>
+              {config.feeUpiId ? (
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${config.feeUpiId}&pn=Sutara%20Mehi%20School&cu=INR`)}`}
+                  alt="UPI QR Code"
+                  className="w-36 h-36 mt-1 border border-[#E2E8F0] rounded-lg"
+                />
+              ) : (
+                "—"
+              )}
+            </dd>
             <dt className="text-sm font-medium text-[#64748B] mt-4">Admin WhatsApp</dt>
             <dd>{config.adminWhatsApp || "—"}</dd>
           </dl>
@@ -722,18 +732,10 @@ export default function FeesPage() {
                 <input
                   value={configForm.feeUpiId}
                   onChange={(e) => setConfigForm({ ...configForm, feeUpiId: e.target.value })}
-                  placeholder="school@upi"
+                  placeholder="school@upi or admin@gmail.com"
                   className="w-full px-4 py-2 rounded-lg border border-[#E2E8F0]"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#64748B] mb-1">QR Code Image URL</label>
-                <input
-                  value={configForm.feeQrUrl}
-                  onChange={(e) => setConfigForm({ ...configForm, feeQrUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-4 py-2 rounded-lg border border-[#E2E8F0]"
-                />
+                <p className="text-xs text-[#64748B] mt-1">QR code is auto-generated from this UPI ID</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#64748B] mb-1">Admin WhatsApp (10-digit)</label>

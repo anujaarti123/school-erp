@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_service.dart';
@@ -190,34 +191,78 @@ class _FeesScreenState extends State<FeesScreen> {
             const SizedBox(height: 24),
             if (_feeUpiId != null && _feeUpiId!.isNotEmpty) ...[
               Text('Pay via UPI', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary),
-                  title: Text(_feeUpiId!, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.copy_rounded),
-                    onPressed: () => Clipboard.setData(ClipboardData(text: _feeUpiId!)),
-                  ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _openUpiApp(childDue),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                        ),
+                        child: QrImageView(
+                          data: _upiDeepLink(childDue),
+                          version: QrVersions.auto,
+                          size: 140,
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Scan QR or tap below', style: GoogleFonts.sourceSans3(fontSize: 12, color: AppColors.textSecondary)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => _openUpiApp(childDue),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 22),
+                          const SizedBox(width: 8),
+                          Text(_feeUpiId!, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                          const SizedBox(width: 8),
+                          Icon(Icons.open_in_new_rounded, size: 18, color: AppColors.textSecondary),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: () => Clipboard.setData(ClipboardData(text: _feeUpiId!)),
+                      child: Text('Tap to copy UPI ID', style: GoogleFonts.sourceSans3(fontSize: 11, color: AppColors.textSecondary)),
+                    ),
+                  ],
                 ),
               ),
             ],
             if (_adminWhatsApp != null && _adminWhatsApp!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final url = 'https://wa.me/${_adminWhatsApp!.replaceAll(RegExp(r'\D'), '')}';
-                  if (await canLaunchUrl(Uri.parse(url))) {
-                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                  }
-                },
-                icon: const Icon(Icons.chat_rounded, size: 20),
-                label: const Text('Contact Admin on WhatsApp'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openWhatsAppIHavePaid(name, childDue),
+                  icon: const Icon(Icons.chat_rounded, size: 22),
+                  label: const Text('I have paid (WhatsApp)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
             ],
@@ -230,5 +275,31 @@ class _FeesScreenState extends State<FeesScreen> {
   String _monthName(int m) {
     const names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return m >= 1 && m <= 12 ? names[m] : 'Month $m';
+  }
+
+  String _upiDeepLink(double amount) {
+    final upi = _feeUpiId ?? '';
+    return 'upi://pay?pa=$upi&pn=Sutara%20Mehi%20School&am=${amount.toStringAsFixed(0)}&cu=INR';
+  }
+
+  Future<void> _openUpiApp(double amount) async {
+    final uri = Uri.parse(_upiDeepLink(amount));
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openWhatsAppIHavePaid(String studentName, double amount) async {
+    final num = (_adminWhatsApp ?? '').replaceAll(RegExp(r'\D'), '');
+    if (num.isEmpty) return;
+    final phone = num.length == 10 ? '91$num' : num;
+    final msg = Uri.encodeComponent(
+      'I have paid ₹${amount.toStringAsFixed(0)} for $studentName. Please confirm receipt.\n\n- SMMS Kursela',
+    );
+    final url = 'https://wa.me/$phone?text=$msg';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }
