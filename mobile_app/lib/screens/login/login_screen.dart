@@ -68,8 +68,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       }
     } catch (e) {
       if (!mounted) return;
+      String msg = e.toString().replaceFirst('Exception: ', '');
+      if (msg.toLowerCase().contains('timeout')) {
+        msg = 'Connection timed out. The server may be starting. Please wait 30 seconds and retry.';
+      }
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = msg;
         _loading = false;
       });
     }

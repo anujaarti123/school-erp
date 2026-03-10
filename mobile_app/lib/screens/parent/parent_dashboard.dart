@@ -48,84 +48,80 @@ class _ParentDashboardState extends State<ParentDashboard> {
       setState(() {
         _children = data;
         _selectedIndex = _children.isNotEmpty ? 0 : -1;
+        _loading = false;
       });
+      _loadKpisInBackground();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
         _loading = false;
       });
-      return;
     }
-    await _loadKpis();
-    if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _loadKpis() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    try {
-      final fees = await _api.getFeesMyChildren();
-      if (!mounted) return;
-      double total = 0;
-      final topDue = fees['totalDue'];
-      if (topDue != null) {
-        if (topDue is num) total = topDue.toDouble();
-        else if (topDue is String) total = double.tryParse(topDue) ?? 0;
-      }
-      if (total == 0) {
-        final children = fees['children'] as List<dynamic>? ?? [];
-        for (final c in children) {
-          final d = c['totalDue'];
-          if (d is num) total += d.toDouble();
-          else if (d is String) total += double.tryParse(d) ?? 0;
+  void _loadKpisInBackground() {
+    Future.wait([
+      _api.getFeesMyChildren(summaryOnly: true).then((fees) {
+        if (!mounted) return;
+        double total = 0;
+        final topDue = fees['totalDue'];
+        if (topDue != null) {
+          if (topDue is num) total = topDue.toDouble();
+          else if (topDue is String) total = double.tryParse(topDue) ?? 0;
         }
-      }
-      setState(() => _totalFeePending = total);
-    } catch (_) {
-      if (mounted) setState(() => _totalFeePending = 0);
-    }
-    try {
-      final hwList = await _api.getHomework();
-      if (!mounted) return;
-      int overdue = 0;
-      for (final h in hwList) {
-        final due = h['dueDate'] as String?;
-        if (due != null) {
-          try {
-            final d = DateTime.parse(due);
-            if (DateTime(d.year, d.month, d.day).isBefore(today)) overdue++;
-          } catch (_) {}
+        if (total == 0) {
+          final children = fees['children'] as List<dynamic>? ?? [];
+          for (final c in children) {
+            final d = c['totalDue'];
+            if (d is num) total += d.toDouble();
+            else if (d is String) total += double.tryParse(d) ?? 0;
+          }
         }
-      }
-      setState(() {
-        _homeworkCount = hwList.length;
-        _overdueHomeworkCount = overdue;
-      });
-    } catch (_) {
-      if (mounted) setState(() {
-        _homeworkCount = 0;
-        _overdueHomeworkCount = 0;
-      });
-    }
-    try {
-      final busData = await _api.getBusMyChildren();
-      if (!mounted) return;
-      final list = busData['children'] as List<dynamic>? ?? [];
-      int withBus = 0;
-      for (final c in list) {
-        if (c['busInfo'] != null) withBus++;
-      }
-      setState(() => _childrenWithBus = withBus);
-    } catch (_) {
-      if (mounted) setState(() => _childrenWithBus = 0);
-    }
-    try {
-      final list = await _api.getBanners();
-      if (mounted) setState(() => _banners = list);
-    } catch (_) {
-      if (mounted) setState(() => _banners = []);
-    }
+        setState(() => _totalFeePending = total);
+      }).catchError((_) {
+        if (mounted) setState(() => _totalFeePending = 0);
+      }),
+      _api.getHomework().then((hwList) {
+        if (!mounted) return;
+        final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+        int overdue = 0;
+        for (final h in hwList) {
+          final due = h['dueDate'] as String?;
+          if (due != null) {
+            try {
+              final d = DateTime.parse(due);
+              if (DateTime(d.year, d.month, d.day).isBefore(today)) overdue++;
+            } catch (_) {}
+          }
+        }
+        setState(() {
+          _homeworkCount = hwList.length;
+          _overdueHomeworkCount = overdue;
+        });
+      }).catchError((_) {
+        if (mounted) setState(() {
+          _homeworkCount = 0;
+          _overdueHomeworkCount = 0;
+        });
+      }),
+      _api.getBusMyChildren().then((busData) {
+        if (!mounted) return;
+        final list = busData['children'] as List<dynamic>? ?? [];
+        int withBus = 0;
+        for (final c in list) {
+          if (c['busInfo'] != null) withBus++;
+        }
+        setState(() => _childrenWithBus = withBus);
+      }).catchError((_) {
+        if (mounted) setState(() => _childrenWithBus = 0);
+      }),
+      _api.getBanners().then((list) {
+        if (mounted) setState(() => _banners = list);
+      }).catchError((_) {
+        if (mounted) setState(() => _banners = []);
+      }),
+    ]);
   }
 
   dynamic get _selectedChild =>
@@ -375,20 +371,33 @@ class _ParentDashboardState extends State<ParentDashboard> {
               return GestureDetector(
                 onTap: () => setState(() => _selectedIndex = i),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
                   margin: const EdgeInsets.symmetric(horizontal: 6),
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
+                    gradient: isSelected
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Colors.white, Colors.white.withOpacity(0.98)],
+                          )
+                        : null,
+                    color: isSelected ? null : Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isSelected ? 0.15 : 0.08),
-                        blurRadius: isSelected ? 12 : 6,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(isSelected ? 0.2 : 0.1),
+                        blurRadius: isSelected ? 16 : 8,
+                        offset: const Offset(0, 6),
                       ),
+                      if (isSelected)
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
                     ],
                   ),
                   child: Column(
@@ -469,7 +478,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
                   'Fees Pending',
                   _totalFeePending > 0 ? '₹${_totalFeePending.toStringAsFixed(0)}' : '₹0',
                   Icons.payment_rounded,
-                  const Color(0xFFDC2626),
+                  [const Color(0xFFEF4444), const Color(0xFFF87171)],
                 ),
               ),
               const SizedBox(width: 12),
@@ -478,7 +487,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
                   'Homework',
                   '$_homeworkCount',
                   Icons.assignment_rounded,
-                  const Color(0xFF7C3AED),
+                  [const Color(0xFF7C3AED), const Color(0xFFA78BFA)],
                 ),
               ),
             ],
@@ -491,7 +500,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
                   'Overdue',
                   '$_overdueHomeworkCount',
                   Icons.warning_amber_rounded,
-                  const Color(0xFFD97706),
+                  [const Color(0xFFD97706), const Color(0xFFFBBF24)],
                 ),
               ),
               const SizedBox(width: 12),
@@ -500,7 +509,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
                   'Bus Assigned',
                   _children.isEmpty ? '—' : '$_childrenWithBus/${_children.length}',
                   Icons.directions_bus_rounded,
-                  const Color(0xFF0284C7),
+                  [const Color(0xFF0284C7), const Color(0xFF38BDF8)],
                 ),
               ),
             ],
@@ -510,7 +519,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
     );
   }
 
-  Widget _buildKpiCard(String label, String value, IconData icon, Color color) {
+  Widget _buildKpiCard(String label, String value, IconData icon, List<Color> gradient) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -523,47 +532,46 @@ class _ParentDashboardState extends State<ParentDashboard> {
             Navigator.pushNamed(context, '/parent/bus', arguments: _selectedChild);
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradient,
+            ),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: gradient[0].withOpacity(0.4),
                 blurRadius: 12,
-                offset: const Offset(0, 4),
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(icon, color: color, size: 22),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: GoogleFonts.sourceSans3(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              Icon(icon, color: Colors.white.withOpacity(0.95), size: 24),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: GoogleFonts.sourceSans3(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 value,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -583,15 +591,27 @@ class _ParentDashboardState extends State<ParentDashboard> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            const Color(0xFFFEF3C7).withOpacity(0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0xFFD97706).withOpacity(0.15),
             blurRadius: 16,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -716,31 +736,44 @@ class _ParentDashboardState extends State<ParentDashboard> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                gradient[0].withOpacity(0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: gradient[0].withOpacity(0.2), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withOpacity(0.06),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: gradient[0].withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: gradient),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: gradient[0].withOpacity(0.4),
-                      blurRadius: 8,
+                      color: gradient[0].withOpacity(0.5),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -770,7 +803,14 @@ class _ParentDashboardState extends State<ParentDashboard> {
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, size: 18, color: AppColors.textSecondary),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: gradient[0].withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.arrow_forward_rounded, size: 20, color: gradient[0]),
+              ),
             ],
           ),
         ),

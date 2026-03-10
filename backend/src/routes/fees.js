@@ -450,31 +450,64 @@ router.get('/summary', requireRole('ADMIN'), async (req, res) => {
 });
 
 // GET /api/fees/my-children - parent's children fee summary
+// Query: summaryOnly=1 (fast, no fee history), session=2024-25, month=1-12, status=paid|pending|partial|all
 router.get('/my-children', async (req, res) => {
   if (req.user.role !== 'PARENT') return res.status(403).json({ error: 'Forbidden' });
-  if (!supabase) return res.json({ children: [], totalDue: 0 });
+  if (!supabase) return res.json({ children: [], totalDue: 0, sessions: [] });
   try {
+    const summaryOnly = req.query.summaryOnly === '1' || req.query.summaryOnly === 'true';
+    const session = req.query.session;
+    const month = req.query.month ? parseInt(req.query.month, 10) : null;
+    const statusFilter = req.query.status || 'all';
+
+    const { data: config } = await supabase.from('SchoolConfig').select('key, value');
+    const cfg = {};
+    (config || []).forEach((r) => { cfg[r.key] = r.value; });
+    const feeStartYear = cfg.fee_start_year ? parseInt(cfg.fee_start_year, 10) : new Date().getFullYear() - 1;
+    const sessions = getAvailableSessions(feeStartYear);
+
     const { data: parents } = await supabase.from('Parent').select('id').eq('userId', req.user.id);
     const parentIds = (parents || []).map((p) => p.id);
     const { data: links } = await supabase.from('StudentParent').select('studentId').in('parentId', parentIds);
     const studentIds = [...new Set((links || []).map((l) => l.studentId))];
     const children = [];
     let totalDue = 0;
+
+    const sessionKeys = new Set();
+    if (session) {
+      getSessionMonths(session).forEach(({ year, month: m }) => sessionKeys.add(`${year}-${m}`));
+    }
+
+    let dueByStudent = {};
+    if (summaryOnly && studentIds.length > 0) {
+      const { data: allFees } = await supabase.from('StudentFee').select('studentId, dueAmount').in('studentId', studentIds);
+      (allFees || []).forEach((f) => {
+        dueByStudent[f.studentId] = (dueByStudent[f.studentId] || 0) + parseFloat(f.dueAmount || 0);
+      });
+    }
+
     for (const sid of studentIds) {
       const { data: student } = await supabase.from('Student').select('id, name, rollNo, classId, class:Class(id, name, section)').eq('id', sid).single();
       if (!student) continue;
-      await ensureStudentFees(sid, student.classId);
-      const { data: fees } = await supabase.from('StudentFee').select('*').eq('studentId', sid).order('year').order('month');
-      const childDue = (fees || []).reduce((s, f) => s + parseFloat(f.dueAmount || 0), 0);
+      if (!summaryOnly) await ensureStudentFees(sid, student.classId);
+
+      let fees = summaryOnly ? [] : ((await supabase.from('StudentFee').select('*').eq('studentId', sid).order('year').order('month')).data || []);
+
+      if (!summaryOnly && fees.length > 0) {
+        if (sessionKeys.size > 0) fees = fees.filter((f) => sessionKeys.has(`${f.year}-${f.month}`));
+        if (month >= 1 && month <= 12) fees = fees.filter((f) => f.month === month);
+        if (statusFilter !== 'all') fees = fees.filter((f) => (f.status || '').toLowerCase() === statusFilter.toLowerCase());
+      }
+
+      const childDue = summaryOnly ? (dueByStudent[sid] || 0) : fees.reduce((s, f) => s + parseFloat(f.dueAmount || 0), 0);
       totalDue += childDue;
-      children.push({ student, fees: fees || [], totalDue: childDue });
+      children.push({ student, fees, totalDue: childDue });
     }
-    const { data: config } = await supabase.from('SchoolConfig').select('key, value');
-    const cfg = {};
-    (config || []).forEach((r) => { cfg[r.key] = r.value; });
+
     res.json({
       children,
       totalDue,
+      sessions,
       feeUpiId: cfg.fee_upi_id || '',
       feeQrUrl: cfg.fee_qr_url || '',
       adminWhatsApp: cfg.admin_whatsapp || '',

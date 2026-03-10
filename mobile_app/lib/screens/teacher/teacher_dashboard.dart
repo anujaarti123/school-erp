@@ -245,13 +245,25 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            const Color(0xFFFFF7ED).withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 20,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 24,
             offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: TeacherColors.primary.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -316,7 +328,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   'Today\'s Classes',
                   todayCount.toString(),
                   Icons.schedule_rounded,
-                  const Color(0xFF059669),
+                  [const Color(0xFF059669), const Color(0xFF34D399)],
                 ),
               ),
               const SizedBox(width: 12),
@@ -325,7 +337,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   'Weekly Slots',
                   weekTotal.toString(),
                   Icons.calendar_month_rounded,
-                  const Color(0xFF7C3AED),
+                  [const Color(0xFF7C3AED), const Color(0xFFA78BFA)],
                 ),
               ),
             ],
@@ -338,7 +350,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   'Subjects',
                   subjects.length.toString(),
                   Icons.menu_book_rounded,
-                  const Color(0xFF0284C7),
+                  [const Color(0xFF0284C7), const Color(0xFF38BDF8)],
                 ),
               ),
               const SizedBox(width: 12),
@@ -347,7 +359,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   'Next Period',
                   todayCount > 0 ? 'P${_todaySlots.first['periodNumber']}' : '—',
                   Icons.upcoming_rounded,
-                  const Color(0xFFB45309),
+                  [const Color(0xFFB45309), const Color(0xFFFBBF24)],
                 ),
               ),
             ],
@@ -357,47 +369,46 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     );
   }
 
-  Widget _buildKpiCard(String label, String value, IconData icon, Color color) {
+  Widget _buildKpiCard(String label, String value, IconData icon, List<Color> gradient) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradient,
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: gradient[0].withOpacity(0.4),
             blurRadius: 12,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.sourceSans3(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          Icon(icon, color: Colors.white.withOpacity(0.95), size: 24),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: GoogleFonts.sourceSans3(
+              fontSize: 12,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Colors.white,
             ),
           ),
         ],
@@ -434,15 +445,28 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  TeacherColors.primary.withOpacity(0.06),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: TeacherColors.primary.withOpacity(0.15), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withOpacity(0.06),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: TeacherColors.primary.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -623,31 +647,44 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                gradient[0].withOpacity(0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: gradient[0].withOpacity(0.2), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withOpacity(0.06),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: gradient[0].withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: gradient),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: gradient[0].withOpacity(0.4),
-                      blurRadius: 8,
+                      color: gradient[0].withOpacity(0.5),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -677,7 +714,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, size: 18, color: AppColors.textSecondary),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: gradient[0].withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.arrow_forward_rounded, size: 20, color: gradient[0]),
+              ),
             ],
           ),
         ),

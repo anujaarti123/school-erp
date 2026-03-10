@@ -43,7 +43,7 @@ class AuthService {
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email.trim(), 'password': password}),
-    );
+    ).timeout(const Duration(seconds: 25));
     final body = jsonDecode(res.body) as Map<String, dynamic>?;
     if (res.statusCode != 200) {
       throw Exception(body?['error'] ?? 'Login failed');
@@ -72,7 +72,7 @@ class AuthService {
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'phone': normalized}),
-    );
+    ).timeout(const Duration(seconds: 25));
     final body = jsonDecode(res.body) as Map<String, dynamic>?;
     if (res.statusCode != 200) {
       throw Exception(body?['error'] ?? 'Login failed');

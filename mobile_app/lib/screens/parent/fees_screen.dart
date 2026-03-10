@@ -18,10 +18,15 @@ class _FeesScreenState extends State<FeesScreen> {
   Map<String, dynamic>? _selectedChild;
   String? _loadedForChildId;
   List<dynamic> _children = [];
+  List<String> _sessions = [];
   String? _feeUpiId;
   String? _adminWhatsApp;
   bool _loading = true;
   String? _error;
+
+  String _session = '';
+  int? _month;
+  String _status = 'all';
 
   @override
   void didChangeDependencies() {
@@ -40,10 +45,17 @@ class _FeesScreenState extends State<FeesScreen> {
       _error = null;
     });
     try {
-      final data = await _api.getFeesMyChildren();
+      final data = await _api.getFeesMyChildren(
+        session: _session.isNotEmpty ? _session : null,
+        month: _month,
+        status: _status != 'all' ? _status : null,
+      );
       if (!mounted) return;
+      final sessions = data['sessions'] as List<dynamic>? ?? [];
       setState(() {
         _children = data['children'] as List<dynamic>? ?? [];
+        _sessions = sessions.map((s) => s.toString()).toList();
+        if (_sessions.isNotEmpty && _session.isEmpty) _session = _sessions.last;
         _feeUpiId = data['feeUpiId'] as String?;
         _adminWhatsApp = data['adminWhatsApp'] as String?;
         _loading = false;
@@ -59,6 +71,10 @@ class _FeesScreenState extends State<FeesScreen> {
         _loading = false;
       });
     }
+  }
+
+  void _applyFilters() {
+    _load();
   }
 
   dynamic _getChildData() {
@@ -126,6 +142,8 @@ class _FeesScreenState extends State<FeesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildFilters(),
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -162,13 +180,14 @@ class _FeesScreenState extends State<FeesScreen> {
             ),
             const SizedBox(height: 24),
             if (fees.isNotEmpty) ...[
-              Text('Fee History', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600),),
+              Text('Fee History', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               ...fees.map((f) {
                 final m = f['month'] as int? ?? 0;
                 final y = f['year'] as int? ?? 0;
                 final due = (f['dueAmount'] as num?)?.toDouble() ?? 0;
                 final paid = (f['paidAmount'] as num?)?.toDouble() ?? 0;
+                final status = (f['status'] as String?) ?? '';
                 return Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -182,11 +201,27 @@ class _FeesScreenState extends State<FeesScreen> {
                       children: [
                         if (due > 0) Text('Due: ₹${due.toStringAsFixed(0)}', style: GoogleFonts.sourceSans3(fontSize: 14, color: AppColors.error, fontWeight: FontWeight.w600)),
                         if (paid > 0) Text('Paid: ₹${paid.toStringAsFixed(0)}', style: GoogleFonts.sourceSans3(fontSize: 12, color: AppColors.success)),
+                        if (status.isNotEmpty) Text(status, style: GoogleFonts.sourceSans3(fontSize: 10, color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
                 );
               }),
+            ] else ...[
+              Text('Fee History', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              Card(
+                color: Colors.grey.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Text(
+                      'No fees for selected filters',
+                      style: GoogleFonts.sourceSans3(fontSize: 14, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ),
+              ),
             ],
             const SizedBox(height: 24),
             if (_feeUpiId != null && _feeUpiId!.isNotEmpty) ...[
@@ -272,20 +307,113 @@ class _FeesScreenState extends State<FeesScreen> {
     );
   }
 
+  String _monthLabel() {
+    if (_month == null) return 'All';
+    const names = {4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec', 1: 'Jan', 2: 'Feb', 3: 'Mar'};
+    return names[_month] ?? 'All';
+  }
+
+  Widget _buildFilters() {
+    const months = ['All', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+    const monthValues = [null, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Filters', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          const SizedBox(height: 12),
+          if (_sessions.isNotEmpty) ...[
+            Text('Session', style: GoogleFonts.sourceSans3(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 4),
+            DropdownButtonFormField<String>(
+              value: _session.isNotEmpty ? _session : _sessions.last,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              items: _sessions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+              onChanged: (v) {
+                setState(() => _session = v ?? _sessions.last);
+                _applyFilters();
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+          Text('Month', style: GoogleFonts.sourceSans3(fontSize: 12, color: AppColors.textSecondary)),
+          const SizedBox(height: 4),
+          DropdownButtonFormField<String>(
+            value: _monthLabel(),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            items: months.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+            onChanged: (v) {
+              final idx = months.indexOf(v ?? 'All');
+              setState(() => _month = idx >= 0 && idx < monthValues.length ? monthValues[idx] : null);
+              _applyFilters();
+            },
+          ),
+          const SizedBox(height: 12),
+          Text('Status', style: GoogleFonts.sourceSans3(fontSize: 12, color: AppColors.textSecondary)),
+          const SizedBox(height: 4),
+          DropdownButtonFormField<String>(
+            value: _status,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All')),
+              DropdownMenuItem(value: 'pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'paid', child: Text('Paid')),
+              DropdownMenuItem(value: 'partial', child: Text('Partial')),
+            ],
+            onChanged: (v) {
+              setState(() => _status = v ?? 'all');
+              _applyFilters();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   String _monthName(int m) {
     const names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return m >= 1 && m <= 12 ? names[m] : 'Month $m';
   }
 
   String _upiDeepLink(double amount) {
-    final upi = _feeUpiId ?? '';
-    return 'upi://pay?pa=$upi&pn=Sutara%20Mehi%20School&am=${amount.toStringAsFixed(0)}&cu=INR';
+    final upi = Uri.encodeComponent(_feeUpiId ?? '');
+    return 'upi://pay?pa=$upi&pn=${Uri.encodeComponent('Sutara Mehi School')}&am=${amount.toStringAsFixed(0)}&cu=INR';
   }
 
   Future<void> _openUpiApp(double amount) async {
-    final uri = Uri.parse(_upiDeepLink(amount));
-    if (await canLaunchUrl(uri)) {
+    try {
+      final uri = Uri.parse(_upiDeepLink(amount));
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open UPI app. Please copy UPI ID and pay manually.')),
+        );
+      }
     }
   }
 
@@ -296,10 +424,15 @@ class _FeesScreenState extends State<FeesScreen> {
     final msg = Uri.encodeComponent(
       'I have paid ₹${amount.toStringAsFixed(0)} for $studentName. Please confirm receipt.\n\n- SMMS Kursela',
     );
-    final url = 'https://wa.me/$phone?text=$msg';
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+    try {
+      final uri = Uri.parse('https://wa.me/$phone?text=$msg');
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open WhatsApp. Please install WhatsApp.')),
+        );
+      }
     }
   }
 }

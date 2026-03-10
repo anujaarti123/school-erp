@@ -152,9 +152,20 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> getFeesMyChildren() async {
-    final uri = Uri.parse('${await _baseUrl()}/api/fees/my-children');
-    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 60));
+  Future<Map<String, dynamic>> getFeesMyChildren({
+    bool summaryOnly = false,
+    String? session,
+    int? month,
+    String? status,
+  }) async {
+    final params = <String, String>{};
+    if (summaryOnly) params['summaryOnly'] = '1';
+    if (session != null && session.isNotEmpty) params['session'] = session;
+    if (month != null && month >= 1 && month <= 12) params['month'] = month.toString();
+    if (status != null && status.isNotEmpty && status != 'all') params['status'] = status;
+    final uri = Uri.parse('${await _baseUrl()}/api/fees/my-children')
+        .replace(queryParameters: params.isNotEmpty ? params : null);
+    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 25));
     if (res.statusCode == 401) throw Exception('Session expired');
     if (res.statusCode != 200) throw Exception('Failed to load fees');
     return jsonDecode(res.body) as Map<String, dynamic>;
