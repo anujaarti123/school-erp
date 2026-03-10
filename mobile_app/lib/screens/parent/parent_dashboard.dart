@@ -137,6 +137,8 @@ class _ParentDashboardState extends State<ParentDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -242,11 +244,13 @@ class _ParentDashboardState extends State<ParentDashboard> {
   }
 
   Widget _buildBannerCarousel() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bannerHeight = (screenHeight * 0.22).clamp(140.0, 200.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: 160,
+          height: bannerHeight,
           child: PageView.builder(
             controller: _bannerController,
             onPageChanged: (i) => setState(() => _bannerPage = i),
@@ -354,7 +358,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 120,
+          height: (MediaQuery.of(context).size.height * 0.16).clamp(100.0, 140.0),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
