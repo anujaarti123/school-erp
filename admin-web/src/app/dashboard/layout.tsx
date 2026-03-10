@@ -17,10 +17,10 @@ export default function DashboardLayout({
               className="h-10 w-10 object-contain flex-shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="text-sm font-bold text-[#B91C1C] font-['Plus_Jakarta_Sans'] leading-tight">
+              <h1 className="text-sm font-bold text-[#0F172A] font-['Plus_Jakarta_Sans'] leading-tight tracking-tight">
                 SUTARA MEHI MISSION SCHOOL
               </h1>
-              <p className="text-xs text-[#991B1B] font-semibold font-['Plus_Jakarta_Sans'] tracking-wide">
+              <p className="text-xs text-[#334155] font-semibold font-['Plus_Jakarta_Sans'] tracking-wider">
                 KURSELA
               </p>
               <p className="text-xs text-[#64748B] mt-0.5 font-['Source_Sans_3']">

@@ -40,10 +40,10 @@ export default function LoginPage() {
               className="h-20 w-20 object-contain"
             />
           </div>
-          <h1 className="text-xl font-bold text-[#B91C1C] font-['Plus_Jakarta_Sans'] leading-tight">
+          <h1 className="text-xl font-bold text-[#0F172A] font-['Plus_Jakarta_Sans'] leading-tight tracking-tight">
             SUTARA MEHI MISSION SCHOOL
           </h1>
-          <p className="text-[#991B1B] font-semibold mt-1 font-['Plus_Jakarta_Sans'] tracking-widest">
+          <p className="text-[#334155] font-semibold mt-1 font-['Plus_Jakarta_Sans'] tracking-[0.2em] text-sm">
             KURSELA
           </p>
           <p className="text-[#64748B] mt-2 font-['Source_Sans_3'] text-sm">
