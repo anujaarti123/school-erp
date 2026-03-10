@@ -33,10 +33,20 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold text-[#0F766E] font-['Plus_Jakarta_Sans']">
-            School ERP
+          <div className="flex justify-center mb-4">
+            <img
+              src="/school_logo.png"
+              alt="Sutara Mehi Mission School"
+              className="h-20 w-20 object-contain"
+            />
+          </div>
+          <h1 className="text-xl font-bold text-[#B91C1C] font-['Plus_Jakarta_Sans'] leading-tight">
+            SUTARA MEHI MISSION SCHOOL
           </h1>
-          <p className="text-[#64748B] mt-2 font-['Source_Sans_3']">
+          <p className="text-[#991B1B] font-semibold mt-1 font-['Plus_Jakarta_Sans'] tracking-widest">
+            KURSELA
+          </p>
+          <p className="text-[#64748B] mt-2 font-['Source_Sans_3'] text-sm">
             Admin Dashboard
           </p>
         </div>

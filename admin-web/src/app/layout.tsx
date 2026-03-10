@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "School ERP — Admin",
-  description: "School Management Admin Dashboard",
+  title: "Sutara Mehi Mission School Kursela — Admin",
+  description: "Sutara Mehi Mission School Kursela - Admin Dashboard",
 };
 
 export default function RootLayout({
